@@ -17,6 +17,7 @@
 #include "ServerFacade.h"
 #include "GuildMgr.h"
 #include "BroadcastHelper.h"
+#include "AuctionHouseMgr.h"  // eqwow: bot AH-seeding (AuctionItem)
 
 bool LootAction::Execute(Event /*event*/)
 {
@@ -256,56 +257,51 @@ bool OpenLootAction::CanOpenLock(uint32 skillId, uint32 reqSkillValue)
     return skillValue >= reqSkillValue || !reqSkillValue;
 }
 
-/*
+// eqwow: revived from an upstream block-commented draft and fixed (it never compiled).
+// Fixes vs the original: undefined sAhBotConfig -> config option; sAuctionMgr.AddAItem ->
+// sAuctionMgr->AddAItem; stack capped to what the bot actually holds; removes the correct
+// (old) item, not the freshly-created auction item; LOG_ERROR -> LOG_DEBUG; faction from bot.
 uint32 StoreLootAction::RoundPrice(double price)
 {
     if (price < 100)
-    {
         return (uint32)price;
-    }
-
     if (price < 10000)
-    {
         return (uint32)(price / 100.0) * 100;
-    }
-
     if (price < 100000)
-    {
         return (uint32)(price / 1000.0) * 1000;
-    }
-
     return (uint32)(price / 10000.0) * 10000;
 }
 
 bool StoreLootAction::AuctionItem(uint32 itemId)
 {
-    ItemTemplate const* proto = sItemStorage.LookupEntry<ItemTemplate>(itemId);
+    ItemTemplate const* proto = sObjectMgr->GetItemTemplate(itemId);
     if (!proto)
         return false;
 
-    if (!proto || proto->Bonding == BIND_WHEN_PICKED_UP || proto->Bonding == BIND_QUEST_ITEM)
+    if (proto->Bonding == BIND_WHEN_PICKED_UP || proto->Bonding == BIND_QUEST_ITEM)
         return false;
 
     Item* oldItem = bot->GetItemByEntry(itemId);
     if (!oldItem)
         return false;
 
-    AuctionHouseEntry const* ahEntry = AuctionHouseMgr::GetAuctionHouseEntry(unit->getFaction());
+    AuctionHouseEntry const* ahEntry = AuctionHouseMgr::GetAuctionHouseEntry(bot->getFaction());
     if (!ahEntry)
         return false;
 
     AuctionHouseObject* auctionHouse = sAuctionMgr->GetAuctionsMap(ahEntry);
+    if (!auctionHouse)
+        return false;
 
-    uint32 price = oldItem->GetCount() * proto->BuyPrice * sRandomPlayerbotMgr.GetBuyMultiplier(bot);
-
-uint32 stackCount = urand(1, proto->GetMaxStackSize());
+    // List at most what the bot actually holds (never over-list then over-remove).
+    uint32 maxStack = proto->GetMaxStackSize() ? proto->GetMaxStackSize() : 1;
+    uint32 stackCount = std::min<uint32>(urand(1, maxStack), oldItem->GetCount());
+    uint32 price = proto->BuyPrice * sRandomPlayerbotMgr.GetBuyMultiplier(bot);
     if (!price || !stackCount)
         return false;
 
-    if (!stackCount)
-        stackCount = 1;
-
-    if (urand(0, 100) <= sAhBotConfig.underPriceProbability * 100)
+    // Occasionally undercut the market so buyouts actually clear.
+    if (frand(0.0f, 1.0f) <= sPlayerbotAIConfig.auctionUnderpriceProbability)
         price = price * 100 / urand(100, 200);
 
     uint32 bidPrice = RoundPrice(stackCount * price);
@@ -315,7 +311,7 @@ uint32 stackCount = urand(1, proto->GetMaxStackSize());
     if (!item)
         return false;
 
-    uint32 auction_time = uint32(urand(8, 24) * HOUR * sWorld->getConfig(CONFIG_FLOAT_RATE_AUCTION_TIME));
+    uint32 auction_time = uint32(urand(8, 24) * HOUR * sWorld->getRate(RATE_AUCTION_TIME));
 
     AuctionEntry* auctionEntry = new AuctionEntry;
     auctionEntry->Id = sObjectMgr->GenerateAuctionID();
@@ -329,28 +325,62 @@ uint32 stackCount = urand(1, proto->GetMaxStackSize());
     auctionEntry->bid = 0;
     auctionEntry->buyout = buyoutPrice;
     auctionEntry->expireTime = time(nullptr) + auction_time;
-    //auctionEntry->moneyDeliveryTime = 0;
     auctionEntry->deposit = 0;
     auctionEntry->auctionHouseEntry = ahEntry;
 
     auctionHouse->AddAuction(auctionEntry);
-
-    sAuctionMgr.AddAItem(item);
+    sAuctionMgr->AddAItem(item);
 
     item->SaveToDB();
     auctionEntry->SaveToDB();
 
-    LOG_ERROR("playerbots", "AhBot {} added {} of {} to auction {} for {}..{}", bot->GetName().c_str(), stackCount,
-proto->Name1.c_str(), 1, bidPrice, buyoutPrice);
+    LOG_DEBUG("playerbots", "AhBot {} listed {}x {} for {}..{}", bot->GetName().c_str(), stackCount,
+        proto->Name1.c_str(), bidPrice, buyoutPrice);
 
+    // Consume the listed quantity from the bot's own item.
     if (oldItem->GetCount() > stackCount)
         oldItem->SetCount(oldItem->GetCount() - stackCount);
     else
-        bot->RemoveItem(item->GetBagSlot(), item->GetSlot(), true);
+        bot->DestroyItem(oldItem->GetBagSlot(), oldItem->GetSlot(), true);
 
     return true;
 }
-*/
+
+void StoreLootAction::MaybeAuctionSurplus()
+{
+    if (sPlayerbotAIConfig.auctionLootProbability <= 0.0f)
+        return;
+    // Only masterless random bots seed the market; a bot serving a real player keeps its loot.
+    if (!sRandomPlayerbotMgr.IsRandomBot(bot) || botAI->HasActivePlayerMaster())
+        return;
+    if (frand(0.0f, 1.0f) > sPlayerbotAIConfig.auctionLootProbability)
+        return;
+
+    std::vector<uint32> candidates;
+    auto consider = [&](Item* it)
+    {
+        if (!it)
+            return;
+        ItemTemplate const* proto = it->GetTemplate();
+        if (!proto || !proto->BuyPrice || proto->Class == ITEM_CLASS_QUEST)
+            return;
+        if (proto->Bonding == BIND_WHEN_PICKED_UP || proto->Bonding == BIND_QUEST_ITEM)
+            return;
+        candidates.push_back(proto->ItemId);
+    };
+
+    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
+        consider(bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot));
+    for (uint8 bag = INVENTORY_SLOT_BAG_START; bag < INVENTORY_SLOT_BAG_END; ++bag)
+        if (Bag* pBag = bot->GetBagByPos(bag))
+            for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+                consider(bot->GetItemByPos(bag, j));
+
+    if (candidates.empty())
+        return;
+
+    AuctionItem(candidates[urand(0, candidates.size() - 1)]);
+}
 
 bool StoreLootAction::Execute(Event event)
 {
@@ -462,6 +492,12 @@ bool StoreLootAction::Execute(Event event)
     *packet << guid;
     bot->GetSession()->QueuePacket(packet);
     // bot->GetSession()->HandleLootReleaseOpcode(packet);
+
+    // eqwow: after looting, a masterless random bot may list a surplus item on the AH.
+    // Loot stores asynchronously (CMSG_AUTOSTORE_LOOT_ITEM above), so this lists items
+    // already in the bags from prior loot cycles — the market fills gradually.
+    MaybeAuctionSurplus();
+
     return true;
 }
 

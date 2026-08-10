@@ -85,6 +85,9 @@ bool PlayerbotAIConfig::Initialize()
     sitDelay = sConfigMgr->GetOption<int32>("AiPlayerbot.SitDelay", 20000);
     returnDelay = sConfigMgr->GetOption<int32>("AiPlayerbot.ReturnDelay", 2000);
     lootDelay = sConfigMgr->GetOption<int32>("AiPlayerbot.LootDelay", 1000);
+    // eqwow: bot auction-house seeding
+    auctionLootProbability = sConfigMgr->GetOption<float>("AiPlayerbot.AuctionLootProbability", 0.0f);
+    auctionUnderpriceProbability = sConfigMgr->GetOption<float>("AiPlayerbot.AuctionUnderpriceProbability", 0.15f);
     disabledWithoutRealPlayerLoginDelay = sConfigMgr->GetOption<int32>("AiPlayerbot.DisabledWithoutRealPlayerLoginDelay", 30);
     disabledWithoutRealPlayerLogoutDelay = sConfigMgr->GetOption<int32>("AiPlayerbot.DisabledWithoutRealPlayerLogoutDelay", 300);
 

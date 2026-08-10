@@ -115,6 +115,9 @@ public:
     uint32 missingBuffReagentMessageCooldown;
     bool autoAvoidAoe;
     float maxAoeAvoidRadius;
+    // eqwow: bot auction-house seeding — chance a masterless random bot lists a surplus
+    // looted item after a loot cycle, and chance it undercuts the computed price.
+    float auctionLootProbability, auctionUnderpriceProbability;
     std::set<uint32> aoeAvoidSpellWhitelist;
     bool tellWhenAvoidAoe;
     std::set<uint32> disallowedGameObjects;

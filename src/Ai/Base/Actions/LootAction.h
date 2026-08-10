@@ -46,6 +46,13 @@ public:
 
     bool Execute(Event event) override;
     static bool IsLootAllowed(uint32 itemid, PlayerbotAI* botAI);
+
+private:
+    // eqwow: masterless random bots list surplus looted items on the auction house so the
+    // economy has an organic supply. Gated by AiPlayerbot.AuctionLootProbability (default 0).
+    void MaybeAuctionSurplus();
+    bool AuctionItem(uint32 itemId);
+    static uint32 RoundPrice(double price);
 };
 
 class ReleaseLootAction : public InventoryAction
