@@ -608,7 +608,11 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
 
             // nonCombatEngine->addStrategy("pvp", false);
             // nonCombatEngine->addStrategy("collision");
-            // nonCombatEngine->addStrategy("group");
+            // The "group" strategy installs the "invite nearby" trigger, gated at runtime by
+            // InviteNearbyToGroupAction::isUseful() -> randomBotGroupNearby. Only add it when the
+            // feature is enabled so nearby random bots can form groups for shared questing.
+            if (sPlayerbotAIConfig.randomBotGroupNearby)
+                nonCombatEngine->addStrategy("group", false);
             // nonCombatEngine->addStrategy("guild");
             nonCombatEngine->addStrategy("grind", false);
 

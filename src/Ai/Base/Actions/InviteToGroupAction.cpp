@@ -71,7 +71,10 @@ bool InviteNearbyToGroupAction::Execute(Event /*event*/)
         if (player->GetGroup())
             continue;
 
-        if (!PlayerbotAIConfig::instance().randomBotInvitePlayer && GET_PLAYERBOT_AI(player)->IsRealPlayer())
+        // A real player is one with no bot AI, or whose AI reports it is a real player.
+        // GET_PLAYERBOT_AI(player) returns nullptr for real players, so it must not be dereferenced.
+        PlayerbotAI* playerAI = GET_PLAYERBOT_AI(player);
+        if (!PlayerbotAIConfig::instance().randomBotInvitePlayer && (!playerAI || playerAI->IsRealPlayer()))
             continue;
 
         Group* group = bot->GetGroup();
@@ -193,7 +196,10 @@ bool InviteGuildToGroupAction::Execute(Event /*event*/)
         if (player->isDND())
             continue;
 
-        if (!PlayerbotAIConfig::instance().randomBotInvitePlayer && GET_PLAYERBOT_AI(player)->IsRealPlayer())
+        // A real player is one with no bot AI, or whose AI reports it is a real player.
+        // GET_PLAYERBOT_AI(player) returns nullptr for real players, so it must not be dereferenced.
+        PlayerbotAI* playerAI = GET_PLAYERBOT_AI(player);
+        if (!PlayerbotAIConfig::instance().randomBotInvitePlayer && (!playerAI || playerAI->IsRealPlayer()))
             continue;
 
         if (player->IsBeingTeleported())
@@ -205,15 +211,13 @@ bool InviteGuildToGroupAction::Execute(Event /*event*/)
         if (WorldPosition(player).distance(bot) > 1000 && player->GetLevel() < 15)
             continue;
 
-        PlayerbotAI* playerAi = GET_PLAYERBOT_AI(player);
-
-        if (playerAi)
+        if (playerAI)
         {
-            if (playerAi->GetGrouperType() == GrouperType::SOLO &&
-                !playerAi->HasRealPlayerMaster())  // Do not invite solo players.
+            if (playerAI->GetGrouperType() == GrouperType::SOLO &&
+                !playerAI->HasRealPlayerMaster())  // Do not invite solo players.
                 continue;
 
-            if (playerAi->HasActivePlayerMaster())  // Do not invite alts of active players.
+            if (playerAI->HasActivePlayerMaster())  // Do not invite alts of active players.
                 continue;
 
             if (player->GetLevel() >
