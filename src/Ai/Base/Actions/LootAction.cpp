@@ -18,6 +18,8 @@
 #include "GuildMgr.h"
 #include "BroadcastHelper.h"
 #include "AuctionHouseMgr.h"  // eqwow: bot AH-seeding (AuctionItem)
+#include "DatabaseEnv.h"       // CharacterDatabase transaction for the auction save
+#include "GameTime.h"          // GameTime::GetGameTime() for expire_time
 
 bool LootAction::Execute(Event /*event*/)
 {
@@ -315,24 +317,26 @@ bool StoreLootAction::AuctionItem(uint32 itemId)
 
     AuctionEntry* auctionEntry = new AuctionEntry;
     auctionEntry->Id = sObjectMgr->GenerateAuctionID();
-    auctionEntry->itemGuidLow = item->GetGUID().GetCounter();
-    auctionEntry->itemTemplate = item->GetEntry();
+    auctionEntry->houseId = AuctionHouseId(ahEntry->houseId);
+    auctionEntry->item_guid = item->GetGUID();
+    auctionEntry->item_template = item->GetEntry();
     auctionEntry->itemCount = item->GetCount();
-    auctionEntry->itemRandomPropertyId = item->GetItemRandomPropertyId();
-    auctionEntry->owner = bot->GetGUID().GetCounter();
+    auctionEntry->owner = bot->GetGUID();
     auctionEntry->startbid = bidPrice;
-    auctionEntry->bidder = 0;
+    auctionEntry->bidder = ObjectGuid::Empty;
     auctionEntry->bid = 0;
     auctionEntry->buyout = buyoutPrice;
-    auctionEntry->expireTime = time(nullptr) + auction_time;
+    auctionEntry->expire_time = GameTime::GetGameTime().count() + auction_time;
     auctionEntry->deposit = 0;
     auctionEntry->auctionHouseEntry = ahEntry;
 
     auctionHouse->AddAuction(auctionEntry);
     sAuctionMgr->AddAItem(item);
 
-    item->SaveToDB();
-    auctionEntry->SaveToDB();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    item->SaveToDB(trans);
+    auctionEntry->SaveToDB(trans);
+    CharacterDatabase.CommitTransaction(trans);
 
     LOG_DEBUG("playerbots", "AhBot {} listed {}x {} for {}..{}", bot->GetName().c_str(), stackCount,
         proto->Name1.c_str(), bidPrice, buyoutPrice);
