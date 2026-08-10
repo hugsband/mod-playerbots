@@ -287,11 +287,11 @@ bool StoreLootAction::AuctionItem(uint32 itemId)
     if (!oldItem)
         return false;
 
-    AuctionHouseEntry const* ahEntry = AuctionHouseMgr::GetAuctionHouseEntryFromFactionTemplate(bot->getFaction());
+    AuctionHouseEntry const* ahEntry = AuctionHouseMgr::GetAuctionHouseEntryFromFactionTemplate(bot->GetFaction());
     if (!ahEntry)
         return false;
 
-    AuctionHouseObject* auctionHouse = sAuctionMgr->GetAuctionsMap(bot->getFaction());
+    AuctionHouseObject* auctionHouse = sAuctionMgr->GetAuctionsMap(bot->GetFaction());
     if (!auctionHouse)
         return false;
 
