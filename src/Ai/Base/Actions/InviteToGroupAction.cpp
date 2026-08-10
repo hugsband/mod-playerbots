@@ -232,7 +232,7 @@ bool InviteGuildToGroupAction::Execute(Event /*event*/)
             player->GetLevel() + 5)  // Do not invite members that too low level or risk dragging them to deadly places.
             continue;
 
-        if (!playerAi && ServerFacade::instance().GetDistance2d(bot, player) > PlayerbotAIConfig::instance().sightDistance)
+        if (!playerAI && ServerFacade::instance().GetDistance2d(bot, player) > PlayerbotAIConfig::instance().sightDistance)
             continue;
 
         Group* group = bot->GetGroup();
