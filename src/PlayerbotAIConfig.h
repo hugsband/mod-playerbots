@@ -408,6 +408,9 @@ public:
     bool equipAndSpecPersistence;
     int32 equipAndSpecPersistenceLevel;
     int32 groupInvitationPermission;
+    int32 groupInviteMaxBotLevelAbove;
+    int32 groupInviteMaxBotLevelAboveHardcore;
+    bool guildBotInviteBypassLevel;
     bool keepAltsInGroup = false;
     bool KeepAltsInGroup() const { return keepAltsInGroup; }
     bool allowSummonInCombat;

@@ -6,9 +6,28 @@
 
 #include "PlayerbotSecurity.h"
 
+#include "DatabaseEnv.h"
 #include "LFGMgr.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
+
+namespace
+{
+    // The hardcore ("covenant") state lives in the mod-everquest module, which mod-playerbots cannot
+    // link against. Detect it with a direct one-row lookup against mod-everquest's characters table.
+    // Mirrors EverQuestHardcoreMgr::IsHardcoreAlive: a row with status = 1 (EQ_HARDCORE_STATUS_ALIVE).
+    bool IsHardcoreCovenantChar(Player* player)
+    {
+        if (!player)
+            return false;
+
+        QueryResult result = CharacterDatabase.Query(
+            "SELECT 1 FROM mod_everquest_hardcore_characters WHERE guid = {} AND status = 1",
+            player->GetGUID().GetCounter());
+
+        return result != nullptr;
+    }
+}
 
 PlayerbotSecurity::PlayerbotSecurity(Player* const bot) : bot(bot)
 {
@@ -84,12 +103,22 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
         if (sPlayerbotAIConfig.groupInvitationPermission <= 1)
         {
             int32 levelDiff = int32(bot->GetLevel()) - int32(from->GetLevel());
-            if (levelDiff > 5)
+
+            // Hardcore-covenant inviters get a stricter gap and never benefit from the guild bypass.
+            bool inviterHardcore = IsHardcoreCovenantChar(from);
+            int32 maxAbove = inviterHardcore ? sPlayerbotAIConfig.groupInviteMaxBotLevelAboveHardcore
+                                             : sPlayerbotAIConfig.groupInviteMaxBotLevelAbove;
+
+            if (levelDiff > maxAbove)
             {
-                if (!bot->GetGuildId() || bot->GetGuildId() != from->GetGuildId())
+                // Guild bypass is opt-in (default off) and never applies to hardcore-covenant inviters.
+                bool guildBypass = !inviterHardcore && sPlayerbotAIConfig.guildBotInviteBypassLevel &&
+                                   bot->GetGuildId() && bot->GetGuildId() == from->GetGuildId();
+
+                if (!guildBypass)
                 {
                     if (reason)
-                        *reason = PLAYERBOT_DENY_LOW_LEVEL;
+                        *reason = inviterHardcore ? PLAYERBOT_DENY_LOW_LEVEL_HARDCORE : PLAYERBOT_DENY_LOW_LEVEL;
 
                     return PLAYERBOT_SECURITY_TALK;
                 }
@@ -208,6 +237,10 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
                 case PLAYERBOT_DENY_LOW_LEVEL:
                     out << "You are too low level: |cffff0000" << uint32(from->GetLevel()) << "|cffffffff/|cff00ff00"
                         << uint32(bot->GetLevel());
+                    break;
+                case PLAYERBOT_DENY_LOW_LEVEL_HARDCORE:
+                    out << "The covenant forbids aid from allies far above you (|cffff0000" << uint32(from->GetLevel())
+                        << "|cffffffff/|cff00ff00" << uint32(bot->GetLevel()) << "|cffffffff).";
                     break;
                 case PLAYERBOT_DENY_GEARSCORE:
                 {

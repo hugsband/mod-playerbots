@@ -140,7 +140,26 @@ AiPlayerbot.AddClassCommand = 1
 
 # Bot group invitation permission level (0 = GM only, 1 = accept based on level, 2 = always accept)
 # Default: 1 (accept based on level)
+# WARNING: value 2 (always accept) bypasses ALL level gates below (including the hardcore-covenant
+# gap). Do NOT use value 2 on this server -- it re-opens the free-playerbot power-leveling hole.
 AiPlayerbot.GroupInvitationPermission = 1
+
+# Maximum number of levels a random bot may be ABOVE the inviting player and still accept a group
+# invite (only enforced when GroupInvitationPermission = 1). Above this gap the bot declines.
+# Default: 5
+AiPlayerbot.GroupInviteMaxBotLevelAbove = 5
+
+# Stricter version of the gap above, applied when the INVITER is a hardcore-covenant character.
+# The guild bypass never applies to hardcore-covenant inviters.
+# Default: 2
+AiPlayerbot.GroupInviteMaxBotLevelAboveHardcore = 2
+
+# Allow a bot to bypass the GroupInviteMaxBotLevelAbove gap when it shares a guild with the inviter.
+# 0 = disabled (default; sharing a guild does NOT let over-level bots accept invites)
+# 1 = enabled (guild members may invite bots beyond the level gap)
+# Never applies to hardcore-covenant inviters regardless of this setting.
+# Default: 0 (disabled)
+AiPlayerbot.GuildBotInviteBypassLevel = 0
 
 # Keep altbots in the party even when the master leaves
 # 0 = disabled (default behavior)
