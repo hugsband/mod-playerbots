@@ -784,6 +784,14 @@ AiPlayerbot.RandomBotMinLevelChance = 0.1
 # Default 0.1 (10%)
 AiPlayerbot.RandomBotMaxLevelChance = 0.1
 
+# Bracket-based level distribution on randomize. 9 comma-separated percentages for level
+# brackets 1-9, 10-19, 20-29, 30-39, 40-49, 50-59, 60-69, 70-79, 80 - must sum to 100.
+# When set, this REPLACES the Min/MaxLevelChance + uniform roll above (mirrors the
+# NpcBot.WanderingBots.Continents.Levels format). Empty = disabled.
+# Example: AiPlayerbot.RandomBotLevelBrackets = "25,15,15,10,5,10,10,5,5"
+# Default: "" (disabled)
+AiPlayerbot.RandomBotLevelBrackets = ""
+
 # Fix the level of randombots (they won't level up)
 # Default: 0 (disabled)
 AiPlayerbot.RandomBotFixedLevel = 0
@@ -1358,6 +1366,17 @@ AiPlayerbot.PvpProhibitedAreaIds = "976,35,392,2268,4161,4010,4317,4312,3649,388
 
 # Improve reaction speeds in battlegrounds and arenas (may cause lag)
 AiPlayerbot.FastReactInBG = 1
+
+# Low-level protection: bots never INITIATE PvP against a player more than this many levels
+# below their own (applies in open world and capitals; BG/arena/duel/self-defense unaffected).
+# -1 = no limit (upstream behavior: 25% gank chance at any gap).
+# Default: 4
+AiPlayerbot.AttackPlayerMaxLevelBelow = 4
+
+# Global scale applied to every bot-initiated PvP attack chance (including the 100% same-level
+# case). 1.0 = level-difference ladder as-is, 0.5 = half as likely, 0 = bots never initiate.
+# Default: 1.0
+AiPlayerbot.AttackPlayerChanceScale = 1.0
 
 #
 #

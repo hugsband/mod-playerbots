@@ -1920,6 +1920,29 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
             level = sPlayerbotAIConfig.randomBotMinLevel;
         }
     }
+    else if (!sPlayerbotAIConfig.randomBotLevelBrackets.empty())
+    {
+        // Bracket-based distribution (9 x 10-level brackets, percentages sum to 100).
+        // Replaces the Min/MaxLevelChance + uniform roll entirely.
+        uint32 roll = urand(1, 100);
+        uint32 cumulative = 0;
+        uint32 bracket = 8;
+        for (uint32 i = 0; i < 9; ++i)
+        {
+            cumulative += sPlayerbotAIConfig.randomBotLevelBrackets[i];
+            if (roll <= cumulative)
+            {
+                bracket = i;
+                break;
+            }
+        }
+        uint32 lo = bracket == 0 ? 1 : bracket * 10;
+        uint32 hi = bracket == 8 ? 80 : bracket * 10 + 9;
+        lo = std::max(lo, minLevel);
+        hi = std::min(hi, maxLevel);
+        // Bracket incompatible with this bot's allowed range (e.g. DK minimum) - uniform fallback
+        level = lo <= hi ? urand(lo, hi) : urand(minLevel, maxLevel);
+    }
     else
     {
         uint32 roll = urand(1, 100);

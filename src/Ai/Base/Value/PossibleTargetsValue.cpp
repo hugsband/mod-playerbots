@@ -73,6 +73,14 @@ bool PossibleTargetsValue::AcceptUnit(Unit* unit)
         if (bot->duel && bot->duel->Opponent == unit)
             return true;
 
+        int32 levelDifference = unit->GetLevel() - bot->GetLevel();
+
+        // Low-level protection: never initiate against players far below the bot's level.
+        // Applies everywhere outside BG/arena/duel/self-defense, capitals included.
+        if (sPlayerbotAIConfig.attackPlayerMaxLevelBelow >= 0 &&
+            levelDifference < -sPlayerbotAIConfig.attackPlayerMaxLevelBelow)
+            return false;
+
         // Capital cities - no restrictions
         uint32 zoneId = bot->GetZoneId();
         bool inCapitalCity = (zoneId == AREA_STORMWIND_CITY ||
@@ -88,7 +96,6 @@ bool PossibleTargetsValue::AcceptUnit(Unit* unit)
             return true;
 
         // Level difference check
-        int32 levelDifference = unit->GetLevel() - bot->GetLevel();
         int32 absLevelDifference = std::abs(levelDifference);
 
         // Extreme difference - do not attack
@@ -108,6 +115,11 @@ bool PossibleTargetsValue::AcceptUnit(Unit* unit)
 
         else if (absLevelDifference < MID_LEVEL_DIFF && absLevelDifference >= LOW_LEVEL_DIFF)
             attackChance = 75;
+
+        // Global scale on bot-initiated PvP (1.0 = ladder as-is, 0 = never initiate)
+        float chanceScale = sPlayerbotAIConfig.attackPlayerChanceScale;
+        if (chanceScale < 1.0f)
+            attackChance = static_cast<uint32>(attackChance * (chanceScale > 0.0f ? chanceScale : 0.0f));
 
         // If probability check needed, use deterministic hash-based decision
         if (attackChance < 100)

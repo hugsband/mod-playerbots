@@ -152,6 +152,9 @@ public:
     bool preferClassArmorType;
     bool preferredSpecWeapons;
     float randomBotMinLevelChance, randomBotMaxLevelChance;
+    std::vector<uint32> randomBotLevelBrackets;
+    int32 attackPlayerMaxLevelBelow;
+    float attackPlayerChanceScale;
     float randomBotRpgChance;
     uint32 minRandomBots, maxRandomBots;
     uint32 randomBotUpdateInterval, randomBotCountChangeMinInterval, randomBotCountChangeMaxInterval;

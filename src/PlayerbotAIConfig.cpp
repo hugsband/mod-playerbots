@@ -161,6 +161,29 @@ bool PlayerbotAIConfig::Initialize()
 
     randomBotMinLevelChance = sConfigMgr->GetOption<float>("AiPlayerbot.RandomBotMinLevelChance", 0.1f);
     randomBotMaxLevelChance = sConfigMgr->GetOption<float>("AiPlayerbot.RandomBotMaxLevelChance", 0.1f);
+
+    // Bracket-based level distribution: 9 comma-separated percentages (levels 1-9, 10-19, ...,
+    // 70-79, 80) that must sum to 100. Overrides Min/MaxLevelChance + uniform roll when set.
+    // Mirrors the NpcBot.WanderingBots.Continents.Levels format.
+    randomBotLevelBrackets.clear();
+    std::string bracketStr = sConfigMgr->GetOption<std::string>("AiPlayerbot.RandomBotLevelBrackets", "");
+    if (!bracketStr.empty())
+    {
+        LoadList<std::vector<uint32>>(bracketStr, randomBotLevelBrackets);
+        uint32 bracketSum = 0;
+        for (uint32 pct : randomBotLevelBrackets)
+            bracketSum += pct;
+        if (randomBotLevelBrackets.size() != 9 || bracketSum != 100)
+        {
+            LOG_ERROR("playerbots", "AiPlayerbot.RandomBotLevelBrackets must be 9 values summing to 100 "
+                "(got {} values, sum {}) - falling back to default level rolls", randomBotLevelBrackets.size(), bracketSum);
+            randomBotLevelBrackets.clear();
+        }
+    }
+
+    attackPlayerMaxLevelBelow = sConfigMgr->GetOption<int32>("AiPlayerbot.AttackPlayerMaxLevelBelow", 4);
+    attackPlayerChanceScale = sConfigMgr->GetOption<float>("AiPlayerbot.AttackPlayerChanceScale", 1.0f);
+
     randomBotRpgChance = sConfigMgr->GetOption<float>("AiPlayerbot.RandomBotRpgChance", 0.20f);
 
     iterationsPerTick = sConfigMgr->GetOption<int32>("AiPlayerbot.IterationsPerTick", 10);
