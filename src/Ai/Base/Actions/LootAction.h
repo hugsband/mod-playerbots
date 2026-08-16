@@ -14,6 +14,7 @@ class GameObject;
 class LootObject;
 class PlayerbotAI;
 class SpellInfo;
+class Player;
 
 class LootAction : public MovementAction
 {
@@ -52,8 +53,11 @@ private:
     // economy has an organic supply. Gated by AiPlayerbot.AuctionLootProbability (default 0).
     void MaybeAuctionSurplus();
     bool AuctionItem(uint32 itemId);
-    static uint32 RoundPrice(double price);
 };
+
+// eqwow: shared helper so bot re-randomize can liquidate bag gear to the auction house
+// using the same pricing/BoP rules as loot auctioning.
+bool AuctionBotItem(Player* bot, uint32 itemId);
 
 class ReleaseLootAction : public InventoryAction
 {

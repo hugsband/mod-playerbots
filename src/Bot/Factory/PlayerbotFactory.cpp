@@ -16,6 +16,7 @@
 #include "DBCStructure.h"
 #include "GuildMgr.h"
 #include "InventoryAction.h"
+#include "LootAction.h"
 #include "Item.h"
 #include "ItemTemplate.h"
 #include "ItemVisitors.h"
@@ -638,6 +639,33 @@ void PlayerbotFactory::Randomize(bool incremental)
         {
             ClearAllItems();
         }
+    }
+    // eqwow: before wiping the backpack on re-randomize, auction the bot's carried BoE gear
+    // instead of destroying it - gives the market an organic used-gear supply.
+    if (sPlayerbotAIConfig.auctionLootProbability > 0.0f && sRandomPlayerbotMgr.IsRandomBot(bot))
+    {
+        std::vector<uint32> gearToList;
+        auto considerGear = [&](Item* it)
+        {
+            if (!it)
+                return;
+            ItemTemplate const* proto = it->GetTemplate();
+            if (!proto || !proto->BuyPrice)
+                return;
+            if (proto->Class != ITEM_CLASS_WEAPON && proto->Class != ITEM_CLASS_ARMOR)
+                return;
+            if (proto->Bonding == BIND_WHEN_PICKED_UP || proto->Bonding == BIND_QUEST_ITEM)
+                return;
+            gearToList.push_back(proto->ItemId);
+        };
+        for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
+            considerGear(bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot));
+        for (uint8 bag = INVENTORY_SLOT_BAG_START; bag < INVENTORY_SLOT_BAG_END; ++bag)
+            if (Bag* pBag = bot->GetBagByPos(bag))
+                for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+                    considerGear(bot->GetItemByPos(bag, j));
+        for (uint32 itemId : gearToList)
+            AuctionBotItem(bot, itemId);
     }
     ClearInventory();
     bot->RemoveAllSpellCooldown();

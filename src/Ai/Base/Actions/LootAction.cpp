@@ -263,7 +263,7 @@ bool OpenLootAction::CanOpenLock(uint32 skillId, uint32 reqSkillValue)
 // Fixes vs the original: undefined sAhBotConfig -> config option; sAuctionMgr.AddAItem ->
 // sAuctionMgr->AddAItem; stack capped to what the bot actually holds; removes the correct
 // (old) item, not the freshly-created auction item; LOG_ERROR -> LOG_DEBUG; faction from bot.
-uint32 StoreLootAction::RoundPrice(double price)
+static uint32 RoundPrice(double price)
 {
     if (price < 100)
         return (uint32)price;
@@ -274,7 +274,7 @@ uint32 StoreLootAction::RoundPrice(double price)
     return (uint32)(price / 10000.0) * 10000;
 }
 
-bool StoreLootAction::AuctionItem(uint32 itemId)
+bool AuctionBotItem(Player* bot, uint32 itemId)
 {
     ItemTemplate const* proto = sObjectMgr->GetItemTemplate(itemId);
     if (!proto)
@@ -350,6 +350,11 @@ bool StoreLootAction::AuctionItem(uint32 itemId)
     return true;
 }
 
+bool StoreLootAction::AuctionItem(uint32 itemId)
+{
+    return AuctionBotItem(bot, itemId);
+}
+
 void StoreLootAction::MaybeAuctionSurplus()
 {
     if (sPlayerbotAIConfig.auctionLootProbability <= 0.0f)
@@ -361,6 +366,7 @@ void StoreLootAction::MaybeAuctionSurplus()
         return;
 
     std::vector<uint32> candidates;
+    std::vector<uint32> gearCandidates;
     auto consider = [&](Item* it)
     {
         if (!it)
@@ -371,6 +377,9 @@ void StoreLootAction::MaybeAuctionSurplus()
         if (proto->Bonding == BIND_WHEN_PICKED_UP || proto->Bonding == BIND_QUEST_ITEM)
             return;
         candidates.push_back(proto->ItemId);
+        // eqwow: bias listings toward real gear so weapons/armor actually reach the market
+        if (proto->Class == ITEM_CLASS_WEAPON || proto->Class == ITEM_CLASS_ARMOR)
+            gearCandidates.push_back(proto->ItemId);
     };
 
     for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
@@ -383,7 +392,9 @@ void StoreLootAction::MaybeAuctionSurplus()
     if (candidates.empty())
         return;
 
-    AuctionItem(candidates[urand(0, candidates.size() - 1)]);
+    // eqwow: prefer listing gear when the bot carries any; else fall back to misc/consumables
+    std::vector<uint32>& pool = gearCandidates.empty() ? candidates : gearCandidates;
+    AuctionItem(pool[urand(0, pool.size() - 1)]);
 }
 
 bool StoreLootAction::Execute(Event event)
