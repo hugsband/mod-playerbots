@@ -1,10 +1,11 @@
-> ## 🐻 Bear Kingdom EQ fork
+> ## Bear Kingdom EQ fork
 >
-> This is a **fork of [mod-playerbots/mod-playerbots](https://github.com/mod-playerbots/mod-playerbots)** (GPLv2), maintained for the Bear Kingdom "EverQuest-in-WoW" server. Changes on top of upstream:
-> - **Auction House seeding** — bots list surplus loot so the AH has goods.
-> - **Boost** + **RandomBotGroupNearby** tweaks for a livelier, grouped world.
+> This is a fork of [mod-playerbots/mod-playerbots](https://github.com/mod-playerbots/mod-playerbots) (GPLv2) that runs on the Bear Kingdom EverQuest-in-WoW server. What we changed on top of upstream:
 >
-> **Contributing:** fork this repo, make changes on a branch, and open a Pull Request. All PRs are reviewed by the maintainer before merging — nothing lands without approval. Upstream credit and the GPLv2 license are unchanged.
+> - Auction House seeding, so bots post their spare loot and there's actually something to buy.
+> - Boost and RandomBotGroupNearby tweaks so bots group up and the world feels busier.
+>
+> To contribute, fork the repo, make your changes on a branch, and open a pull request. Every PR gets reviewed before it goes in, so nothing lands without a look first. The GPLv2 license and the credit to upstream are unchanged.
 
 <p align="center">
     <a href="https://github.com/mod-playerbots/mod-playerbots/blob/master/README.md">English</a>
