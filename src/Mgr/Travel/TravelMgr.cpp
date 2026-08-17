@@ -8,6 +8,8 @@
 
 #include <iomanip>
 #include <numeric>
+#include <sstream>
+#include <unordered_map>
 
 #include "AreaDefines.h"
 #include "Creature.h"
@@ -4654,6 +4656,27 @@ void TravelMgr::PrepareDestinationCache()
     // Temporary map to group creatures by entry and area
     std::map<std::tuple<uint16, int32, int32, int32>, std::vector<CreatureData>> tempLocsCache;
     std::map<uint32, std::map<uint32, std::vector<WorldLocation>>> tempCreatureCache;
+    // Maps outside the always-loaded WoW continents (the curated extra overworld maps, e.g. EQ
+    // zones) are created lazily on first entry, so FindMap() returns null for them at startup and
+    // every creature on them would be silently skipped — empty hub cache, empty grind pool. Their
+    // zone is resolved from the creature table's zoneId column instead (populated for EQ spawns),
+    // which also sidesteps terrain-based area lookups on their stub ADTs.
+    std::unordered_map<ObjectGuid::LowType, uint32> dbZoneBySpawnId;
+    if (!sPlayerbotAIConfig.extraOverworldMaps.empty())
+    {
+        std::ostringstream mapList;
+        for (uint32 extraMapId : sPlayerbotAIConfig.extraOverworldMaps)
+            mapList << (mapList.tellp() > 0 ? "," : "") << extraMapId;
+        std::string zoneQuery = "SELECT guid, zoneId FROM creature WHERE zoneId != 0 AND map IN (" + mapList.str() + ")";
+        if (QueryResult zoneResult = WorldDatabase.Query(zoneQuery.c_str()))
+        {
+            do
+            {
+                Field* zoneFields = zoneResult->Fetch();
+                dbZoneBySpawnId[zoneFields[0].Get<uint32>()] = zoneFields[1].Get<uint32>();
+            } while (zoneResult->NextRow());
+        }
+    }
     for (auto const& [guid, creatureData] : sObjectMgr->GetAllCreatureData())
     {
         CreatureTemplate const* creatureTemplate = sObjectMgr->GetCreatureTemplate(creatureData.id);
@@ -4671,15 +4694,22 @@ void TravelMgr::PrepareDestinationCache()
         float orient = creatureData.orientation;
         uint32 templateEntry = creatureData.id;
 
-        Map* map = sMapMgr->FindMap(mapId, 0);
-        if (!map)
-            continue;
+        uint32 areaId = 0;
+        auto dbZoneItr = dbZoneBySpawnId.find(guid);
+        if (dbZoneItr != dbZoneBySpawnId.end())
+            areaId = dbZoneItr->second;  // curated extra-overworld map: DB zone is authoritative
+        else
+        {
+            Map* map = sMapMgr->FindMap(mapId, 0);
+            if (!map)
+                continue;
 
-        AreaTableEntry const* area = sAreaTableStore.LookupEntry(map->GetAreaId(PHASEMASK_NORMAL, x, y, z));
-        if (!area)
-            continue;
+            AreaTableEntry const* area = sAreaTableStore.LookupEntry(map->GetAreaId(PHASEMASK_NORMAL, x, y, z));
+            if (!area)
+                continue;
 
-        uint32 areaId = area->zone ? area->zone : area->ID;
+            areaId = area->zone ? area->zone : area->ID;
+        }
 
         // CREATURES
         if (creatureTemplate->npcflag == 0 &&
