@@ -17,6 +17,7 @@
 #include "ChatHelper.h"
 #include "CheckMountStateAction.h"
 #include "Common.h"
+#include "Config.h"
 #include "CreatureData.h"
 #include "EmoteAction.h"
 #include "Engine.h"
@@ -1224,6 +1225,15 @@ void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const& packet)
                     uint32 accountId = sCharacterCache->GetCharacterAccountIdByGuid(guid1);
                     isFromFreeBot = sPlayerbotAIConfig.IsInRandomAccountList(accountId);
                     bool isMentioned = message.find(bot->GetName()) != std::string::npos;
+
+                    // ChatBrain (mod-everquest): when the LLM chat pipe is enabled, a real player's
+                    // whisper to a bot is answered by the generated LLM reply, so suppress the canned
+                    // "chat message"/not-understand reply for that one path only. Command handling,
+                    // bot-to-bot chat, and every other channel are untouched (config-key coupling
+                    // only; no compile-time dependency on mod-everquest).
+                    if (msgtype == CHAT_MSG_WHISPER && !isFromFreeBot &&
+                        sConfigMgr->GetOption<bool>("EverQuest.ChatBrain.Enabled", false))
+                        return;
 
                     // ChatChannelSource chatChannelSource = GetChatChannelSource(bot, msgtype, chanName);
 
