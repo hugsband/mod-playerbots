@@ -198,6 +198,13 @@ bool PlayerbotAIConfig::Initialize()
 
     randomBotMapsAsString = sConfigMgr->GetOption<std::string>("AiPlayerbot.RandomBotMaps", "0,1,530,571");
     LoadList<std::vector<uint32>>(randomBotMapsAsString, randomBotMaps);
+    // Extra overworld maps: comma-separated map IDs that isOverworld() should treat as open world
+    // (in addition to the hardcoded WoW continents). Empty default keeps stock behavior. Parsed once
+    // here into a set, mirroring how RandomBotMaps is parsed. Consumed at startup by TravelMgr::Init()
+    // via WorldPosition::isOverworld(); a worldserver restart is required for changes to take effect.
+    extraOverworldMaps.clear();
+    LoadSet<std::set<uint32>>(sConfigMgr->GetOption<std::string>("AiPlayerbot.ExtraOverworldMaps", ""),
+                              extraOverworldMaps);
     probTeleToBankers = sConfigMgr->GetOption<float>("AiPlayerbot.ProbTeleToBankers", 0.25f);
     enableWeightTeleToCityBankers = sConfigMgr->GetOption<bool>("AiPlayerbot.EnableWeightTeleToCityBankers", false);
     weightTeleToStormwind = sConfigMgr->GetOption<int>("AiPlayerbot.TeleToStormwindWeight", 2);
@@ -436,7 +443,14 @@ bool PlayerbotAIConfig::Initialize()
         // The Burning Crusade - Zones
         3483, 3518, 3519, 3520, 3521, 3522, 3523, 4080,
         // Wrath of the Lich King - Zones
-        65, 66, 67, 210, 394, 495, 2817, 3537, 3711, 4197
+        65, 66, 67, 210, 394, 495, 2817, 3537, 3711, 4197,
+        // EverQuest / Norrath - curated cross-world tranche-1 zones (see cross-world bots design).
+        // These are NOT in the hardcoded zone2LevelBracket table; listing them here lets their
+        // AiPlayerbot.ZoneBracket.<id> config keys be read and override/insert a bracket at startup.
+        5141,  // Greater Faydark  (map 791)
+        5107,  // Butcherblock     (map 757)
+        5116,  // West Commonlands (map 766)
+        5180   // Oasis of Marr    (map 830)
     };
 
     for (uint32 zoneId : zoneIds)

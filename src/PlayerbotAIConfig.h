@@ -141,6 +141,10 @@ public:
     int weightTeleToShattrathCity;
     int weightTeleToDalaran;
     std::vector<uint32> randomBotMaps;
+    // Extra map IDs to be treated as "overworld" by WorldPosition::isOverworld() in addition to the
+    // hardcoded WoW continents (0,1,530,571). Used to un-suppress the RPG/quest/grind lifecycle on
+    // curated non-WoW open-world maps (e.g. EQ/Norrath). Empty default = stock behavior.
+    std::set<uint32> extraOverworldMaps;
     std::vector<uint32> randomBotQuestItems;
     std::vector<uint32> randomBotAccounts;
     std::vector<uint32> randomBotSpellIds;

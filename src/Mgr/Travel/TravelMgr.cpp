@@ -257,7 +257,14 @@ WorldPosition& WorldPosition::operator-=(WorldPosition const& p1)
 
 bool WorldPosition::isOverworld()
 {
-    return GetMapId() == 0 || GetMapId() == 1 || GetMapId() == 530 || GetMapId() == 571;
+    uint32 mapId = GetMapId();
+    if (mapId == 0 || mapId == 1 || mapId == 530 || mapId == 571)
+        return true;
+    // Config-driven extension: curated non-WoW open-world maps (e.g. EQ/Norrath) that should run the
+    // full overworld RPG/quest/grind lifecycle rather than being treated as instances/dungeons.
+    // Empty set (default) preserves stock behavior.
+    std::set<uint32> const& extra = sPlayerbotAIConfig.extraOverworldMaps;
+    return !extra.empty() && extra.find(mapId) != extra.end();
 }
 
 bool WorldPosition::isInWater()

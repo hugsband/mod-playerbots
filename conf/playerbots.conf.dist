@@ -1246,6 +1246,22 @@ AiPlayerbot.ZoneBracket.3711 = 75,80
 AiPlayerbot.ZoneBracket.4197 = 79,80
 
 #
+# EverQuest / Norrath - curated cross-world tranche-1 zones (see cross-world bots design).
+# These zone IDs are NOT in the module's hardcoded zone2LevelBracket table; they are read here so a
+# bracket can be inserted for them at startup (the config parser only reads ZoneBracket.<id> keys for
+# a known allowlist of zone IDs, which now includes these four). Brackets derived from the 25th/75th
+# percentile of on-map creature levels on VM 111. Only takes effect for maps that are BOTH in
+# AiPlayerbot.RandomBotMaps and treated as overworld via AiPlayerbot.ExtraOverworldMaps. Startup-only
+# (built by TravelMgr::Init) -- a worldserver restart is required. Uncomment to activate the tranche.
+# NOTE: under EnableNewRpgStrategy=1 the initial teleport-in also needs a non-empty hub cache, which
+# today is only seeded from innkeeper/flightmaster NPCs (absent in Norrath) -- see Phase B2. Brackets
+# still govern level-appropriateness once bots are present.
+#AiPlayerbot.ZoneBracket.5141 = 1,12     # Greater Faydark  (map 791)
+#AiPlayerbot.ZoneBracket.5107 = 1,12     # Butcherblock     (map 757)
+#AiPlayerbot.ZoneBracket.5116 = 6,18     # West Commonlands (map 766)
+#AiPlayerbot.ZoneBracket.5180 = 10,22    # Oasis of Marr    (map 830)
+
+#
 #
 ####################################################################################################
 
@@ -1255,7 +1271,18 @@ AiPlayerbot.ZoneBracket.4197 = 79,80
 
 # Map IDs where bots can be teleported to
 # Defaults: 0 = Eastern Kingdoms, 1 = Kalimdor, 530 = Outland, 571 = Northrend
+# To send bots into curated Norrath zones, append their map IDs here AND list the same IDs in
+# AiPlayerbot.ExtraOverworldMaps below, e.g.:  0,1,530,571,791,757,766,830
 AiPlayerbot.RandomBotMaps = 0,1,530,571
+
+# Extra map IDs treated as "overworld" by the bot AI, in addition to the hardcoded WoW continents
+# (0,1,530,571). Needed so the full overworld RPG/quest/grind lifecycle runs on curated non-WoW
+# open-world maps (e.g. EQ/Norrath); without it those maps are treated as instances and the lifecycle
+# is suppressed. Comma-separated map IDs. Empty (default) = stock behavior. Startup-only -- a
+# worldserver restart is required. These IDs should be a subset of AiPlayerbot.RandomBotMaps.
+# Tranche-1 example (Greater Faydark, Butcherblock, West Commonlands, Oasis of Marr):
+#AiPlayerbot.ExtraOverworldMaps = 791,757,766,830
+AiPlayerbot.ExtraOverworldMaps =
 
 # Probability bots teleport to banker (city)
 # Default: 0.25
