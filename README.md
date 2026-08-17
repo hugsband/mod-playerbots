@@ -6,7 +6,7 @@
 > - **A working bot economy.** Auction House seeding revived and fixed for this core, so bots post their spare loot — plus gear-biased listings and bots auctioning their carried gear before a re-roll instead of destroying it. There's actually equipment on the AH now.
 > - **PvP noob protection.** Bots won't attack flagged players more than a few levels below them, a global attack-chance scale, and a level-bracket distribution so the bot population spreads across level ranges instead of clumping at the top.
 > - **No free power-leveling.** A configurable invite level gap plus a hardcore-covenant gate, so you can't drag a max-level free bot around at level 5 (and hardcore characters can't sidestep their covenant with bot muscle).
-> - **Bots that group up.** RandomBotGroupNearby actually works (upstream's was broken on this core), so bots form parties near each other and the world feels busier.
+> - **Bots that group up.** RandomBotGroupNearby actually works. Upstream ships it disabled (the "group" strategy is commented out — their own config notes say "Currently not functioning properly") and with a crash bug when a real player is in invite range; we enabled it behind the config flag and fixed the crash, so bots form parties near each other and the world feels busier.
 > - Assorted small compile/API fixes for our AzerothCore playerbots-merge core and Debian 12.
 >
 > To contribute, fork the repo, make your changes on a branch, and open a pull request. Every PR gets reviewed before it goes in, so nothing lands without a look first. The GPLv2 license and the credit to upstream are unchanged.
