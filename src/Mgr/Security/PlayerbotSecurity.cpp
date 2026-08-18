@@ -46,8 +46,9 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
         return PLAYERBOT_SECURITY_DENY_ALL;
     }
 
-    // GMs always have full access
-    if (from->CanBeGameMaster())
+    // Full access only while GM mode is actually on (.gm on) — an admin playing
+    // normally on a privileged account goes through the same gates as everyone else.
+    if (from->IsGameMaster())
         return PLAYERBOT_SECURITY_ALLOW_ALL;
 
     PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
