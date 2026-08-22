@@ -450,7 +450,14 @@ bool PlayerbotAIConfig::Initialize()
         5141,  // Greater Faydark  (map 791)
         5107,  // Butcherblock     (map 757)
         5116,  // West Commonlands (map 766)
-        5180   // Oasis of Marr    (map 830)
+        5180,  // Oasis of Marr    (map 830)
+        // EverQuest / Norrath - curated cross-world tranche-2 + platform + water zones.
+        5129,  // Everfrost      (map 779)
+        5131,  // Feerrott       (map 781)
+        5177,  // North Karana   (map 827)
+        5204,  // South Karana   (map 854)
+        5159,  // Kedge Keep     (map 809)
+        5100   // Plane of Sky   (map 750)
     };
 
     for (uint32 zoneId : zoneIds)
